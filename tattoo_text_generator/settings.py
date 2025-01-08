@@ -18,7 +18,7 @@ SECRET_KEY = config('SECRET_KEY', 'my-fallback-secret-key')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1' ,'vercel.app']
 
 # Application definition
 INSTALLED_APPS = [
@@ -38,18 +38,24 @@ INSTALLED_APPS = [
     'corsheaders',
     'whitenoise.runserver_nostatic',
 ]
+STATIC_URL = '/static/'
+
+# Correct way to define STATIC_ROOT
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware', 
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',  # Place Whitenoise middleware here
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
-
+] 
 ROOT_URLCONF = 'tattoo_text_generator.urls'
 
 TEMPLATES = [
