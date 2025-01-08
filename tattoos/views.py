@@ -8,38 +8,68 @@ from rest_framework.views import APIView
 from rest_framework import status
 from tattoos.models import Font, TattooRequest
 from tattoos.serializers import TattooRequestSerializer
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 class GenerateTattooView(APIView):
     """
-     API View for generating tattoo text images.
+    API endpoint for generating tattoo text images.
     
-    Handles the creation of tattoo requests and initiates asynchronous image generation.
-    Attributes:
-        permission_classes (list): List of permission classes for the view.
-        MIN_FONT_SIZE (int): Minimum allowed font size.
-        MAX_FONT_SIZE (int): Maximum allowed font size.
-        DEFAULT_FONT_SIZE (int): Default font size if not specified.
-        DEFAULT_COLOR (str): Default color in hex format if not specified.
-    Methods:
-        validate_color(color: str) -> bool:
-            Validate hex color format.
-        validate_size(size: int) -> int:
-            Validate and constrain font size.
-        post(request):
-                text (str): Required - Text to generate.
-                font (str): Required - Font name to use.
-                color (str): Optional - Hex color code (default: #000000).
-                size (int): Optional - Font size (default: 100).
+    This endpoint handles the creation of customized tattoo text images with specified fonts,
+    colors, and sizes. The image generation is processed asynchronously using Celery.
     """
-   
     permission_classes = [IsAuthenticated]
     
-    # Constants for validation
     MIN_FONT_SIZE = 12
     MAX_FONT_SIZE = 200
     DEFAULT_FONT_SIZE = 100
     DEFAULT_COLOR = "#000000"
-    
+
+    @swagger_auto_schema(
+        operation_description="Generate a custom tattoo text image",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['text', 'font'],
+            properties={
+                'text': openapi.Schema(
+                    type=openapi.TYPE_STRING, 
+                    description="Text to be converted into tattoo image"
+                ),
+                'font': openapi.Schema(
+                    type=openapi.TYPE_STRING, 
+                    description="Name of the font to use"
+                ),
+                'color': openapi.Schema(
+                    type=openapi.TYPE_STRING, 
+                    description="Hex color code (e.g., #000000)",
+                    default="#000000"
+                ),
+                'size': openapi.Schema(
+                    type=openapi.TYPE_INTEGER, 
+                    description=f"Font size ({MIN_FONT_SIZE}-{MAX_FONT_SIZE})",
+                    default=DEFAULT_FONT_SIZE
+                ),
+            }
+        ),
+        responses={
+            202: openapi.Response(
+                description="Task successfully initiated",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'request_id': openapi.Schema(type=openapi.TYPE_STRING),
+                        'task_id': openapi.Schema(type=openapi.TYPE_STRING),
+                        'message': openapi.Schema(type=openapi.TYPE_STRING),
+                        'status': openapi.Schema(type=openapi.TYPE_STRING),
+                        'data': openapi.Schema(type=openapi.TYPE_OBJECT)
+                    }
+                )
+            ),
+            400: "Invalid request parameters",
+            404: "Font not found",
+            500: "Server error"
+        }
+    )
     def validate_color(self, color: str) -> bool:
         """Validate hex color format."""
         if not color:
@@ -146,19 +176,71 @@ class GenerateTattooView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
+
 class CheckTaskStatusView(APIView):
     """
-    Check the status of a tattoo generation task.
+    API endpoint for checking the status of a tattoo generation task.
     
-    Endpoints:
-        GET /api/tasks/<task_id>/
-        
-    Returns:
-        - 200: Task completed successfully with image URL
-        - 202: Task is still in progress
-        - 404: Task not found
-        - 500: Task failed or encountered an error
+    This endpoint allows monitoring of asynchronous tattoo generation tasks,
+    providing current status and results when completed.
     """
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        operation_description="Check the status of a tattoo generation task",
+        manual_parameters=[
+            openapi.Parameter(
+                'task_id',
+                openapi.IN_PATH,
+                description="ID of the task to check",
+                type=openapi.TYPE_STRING,
+                required=True
+            )
+        ],
+        responses={
+            200: openapi.Response(
+                description="Task completed successfully",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'task_id': openapi.Schema(type=openapi.TYPE_STRING),
+                        'status': openapi.Schema(type=openapi.TYPE_STRING),
+                        'message': openapi.Schema(type=openapi.TYPE_STRING),
+                        'image_url': openapi.Schema(type=openapi.TYPE_STRING),
+                        'created_at': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            ),
+            202: openapi.Response(
+                description="Task is still processing",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'task_id': openapi.Schema(type=openapi.TYPE_STRING),
+                        'status': openapi.Schema(type=openapi.TYPE_STRING),
+                        'message': openapi.Schema(type=openapi.TYPE_STRING)
+                    }
+                )
+            ),
+            400: "Invalid task ID",
+            410: "Task was cancelled",
+            500: "Task failed or server error"
+        }
+    )
+    def get(self, request, task_id):
+        """
+        Retrieve the current status of a tattoo generation task.
+        
+        Parameters:
+            task_id (str): The ID of the task to check
+            
+        Returns:
+            200 OK: Task completed successfully (includes image URL)
+            202 ACCEPTED: Task is still processing
+            400 BAD REQUEST: Invalid task ID
+            410 GONE: Task was cancelled
+            500 INTERNAL SERVER ERROR: Task failed or server error
+        """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, task_id):
