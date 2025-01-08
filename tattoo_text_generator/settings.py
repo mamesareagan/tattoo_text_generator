@@ -72,13 +72,13 @@ WSGI_APPLICATION = 'tattoo_text_generator.wsgi.application'
 
 # Database
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DATABASE_NAME'),
-        'USER': config('DATABASE_USER'),
-        'PASSWORD': config('DATABASE_PASSWORD'),
-        'HOST': config('DATABASE_HOST'),
-        'PORT': config('DATABASE_PORT'),
+    "default": {
+        "ENGINE": config("DATABASE_ENGINE", default="django.db.backends.sqlite3"),
+        "NAME": BASE_DIR / config("DATABASE_NAME", default="db.sqlite3"),
+        "USER": config("DATABASE_USER", default=""),  # Empty string is better than a placeholder password
+        "PASSWORD": config("DATABASE_PASSWORD", default=""), # Empty string is better than a placeholder password
+        "HOST": config("DATABASE_HOST", default=""),
+        "PORT": config("DATABASE_PORT", default=""),
     }
 }
 # Password validation
