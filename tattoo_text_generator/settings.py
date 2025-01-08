@@ -18,8 +18,7 @@ SECRET_KEY = config('SECRET_KEY', 'my-fallback-secret-key')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1' ,'vercel.app' ,'tattoo-text-generator-d989-lwidk0dkc-mamesareagans-projects.vercel.app']
-
+ALLOWED_HOSTS = ['*']
 
 #Application definition
 INSTALLED_APPS = [
@@ -134,11 +133,8 @@ CELERY_TIMEZONE = 'Africa/Nairobi'
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
 
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost',
-    'http://127.0.0.1',
-    'https://tattoo-text-generator-d989-lwidk0dkc-mamesareagans-projects.vercel.app',
-]
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 # Django Rest Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
